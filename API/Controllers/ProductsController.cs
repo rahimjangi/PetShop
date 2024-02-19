@@ -1,7 +1,9 @@
-﻿using Core.Entities;
-using Infrastructure.Data;
+﻿using API.Dto;
+using AutoMapper;
+using Core.Entities;
+using Core.Interfaces;
+using Core.Specifications;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -9,23 +11,27 @@ namespace API.Controllers;
 [ApiController]
 public class ProductsController : ControllerBase
 {
-    private readonly StoreContext _context;
+    private readonly IGenericRepository<Product> _productRepository;
+    private readonly IMapper _mapper;
 
-    public ProductsController(StoreContext context)
+    public ProductsController(IGenericRepository<Product> productRepository, IMapper mapper)
     {
-        _context = context;
+        _productRepository = productRepository;
+        _mapper = mapper;
     }
     [HttpGet]
-    public async Task<ActionResult<List<Product>>> GetProducts()
+    public async Task<ActionResult<IReadOnlyList<ProductToReturnDto>>> GetProducts()
     {
-        var products = await _context.Products.ToListAsync();
-        return products;
+        var spec = new ProductsWithTypesAndBrandsSpec();
+        var products = await _productRepository.ListAsync(spec);
+        return Ok(_mapper.Map<IReadOnlyList<Product>, IReadOnlyList<ProductToReturnDto>>(products));
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Product>> GetProduct(int id)
+    public async Task<ActionResult<ProductToReturnDto>> GetProduct(int id)
     {
-        var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == id);
-        return product;
+        var spec = new ProductsWithTypesAndBrandsSpec(id);
+        var product = await _productRepository.GetEntityWithSpec(spec);
+        return _mapper.Map<Product, ProductToReturnDto>(product);
     }
 }
