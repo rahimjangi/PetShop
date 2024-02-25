@@ -3,6 +3,7 @@ using Core.Interfaces;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 namespace API.Extensions;
 
@@ -15,6 +16,13 @@ public static class ApplicationServicesExtensions
         {
             options.UseSqlServer(configuration.GetConnectionString("default"));
         });
+        services.AddSingleton<IConnectionMultiplexer>(c =>
+        {
+            var options = ConfigurationOptions.Parse(configuration.GetConnectionString("Redis"));
+            return ConnectionMultiplexer.Connect(options);
+
+        });
+        services.AddScoped<IBasketRepository, BasketRepository>();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
